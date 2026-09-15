@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ポモドーロ ToDo</title>
+<style>
+  :root {
+    --bg: #f4f1ea;
+    --card: #ffffff;
+    --ink: #2b2620;
+    --sub: #8a8478;
+    --accent: #e0653a;
+    --accent-soft: #fbe4da;
+    --line: #e9e4d9;
+    --done: #b8b2a4;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    display: flex;
+    justify-content: center;
+    padding: 32px 16px;
+  }
+  .wrap {
+    width: 100%;
+    max-width: 480px;
+  }
+  h1 {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0 0 24px;
+    text-align: center;
+    letter-spacing: 0.02em;
+  }
+  .timer-card {
+    background: var(--card);
+    border-radius: 20px;
+    padding: 28px 24px;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.04);
+    margin-bottom: 20px;
+  }
+  .mode-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .time {
+    font-size: 56px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+    margin-bottom: 20px;
+  }
+  .ring {
+    width: 100%;
+    height: 6px;
+    background: var(--line);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .ring-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 3px;
+    transition: width 1s linear;
+  }
+  .timer-controls {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  }
+  button {
+    font-family: inherit;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.1s ease, opacity 0.15s ease;
+  }
+  button:active { transform: scale(0.96); }
+  .btn-primary {
+    background: var(--accent);
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 26px;
+    border-radius: 999px;
+  }
+  .btn-secondary {
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: 999px;
+  }
+  .session-dots {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 18px;
+  }
+  .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--line);
+  }
+  .dot.filled { background: var(--accent); }
+
+  .todo-card {
+    background: var(--card);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.04);
+  }
+  .todo-card h2 {
+    font-size: 14px;
+    font-weight: 700;
+    margin: 0 0 14px;
+    color: var(--sub);
+    letter-spacing: 0.04em;
+  }
+  .todo-input-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .todo-input-row input {
+    flex: 1;
+    font-family: inherit;
+    font-size: 14px;
+    padding: 11px 14px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    outline: none;
+    background: var(--bg);
+    color: var(--ink);
+  }
+  .todo-input-row input:focus { border-color: var(--accent); }
+  .todo-input-row button {
+    background: var(--ink);
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 0 18px;
+    border-radius: 12px;
+  }
+  ul#list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  li.item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 4px;
+    border-bottom: 1px solid var(--line);
+  }
+  li.item:last-child { border-bottom: none; }
+  .check {
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    border: 2px solid var(--line);
+    flex-shrink: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: white;
+  }
+  .check.done { background: var(--accent); border-color: var(--accent); }
+  .item-text {
+    flex: 1;
+    font-size: 14px;
+    word-break: break-word;
+  }
+  .item.done .item-text { color: var(--done); text-decoration: line-through; }
+  .pomo-count {
+    font-size: 11px;
+    color: var(--sub);
+    background: var(--bg);
+    padding: 2px 8px;
+    border-radius: 999px;
+    flex-shrink: 0;
+  }
+  .del {
+    background: none;
+    color: var(--sub);
+    font-size: 16px;
+    padding: 2px 6px;
+    flex-shrink: 0;
+  }
+  .del:hover { color: var(--accent); }
+  .empty {
+    text-align: center;
+    color: var(--sub);
+    font-size: 13px;
+    padding: 20px 0;
+  }
+  .active-tag {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--accent);
+    background: var(--accent-soft);
+    padding: 2px 6px;
+    border-radius: 6px;
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🍅 ポモドーロ ToDo</h1>
+
+  <div class="timer-card">
+    <div class="mode-label" id="modeLabel">集中タイム</div>
+    <div class="time" id="timeDisplay">25:00</div>
+    <div class="ring"><div class="ring-fill" id="ringFill" style="width:100%"></div></div>
+    <div class="timer-controls">
+      <button class="btn-primary" id="startBtn">開始</button>
+      <button class="btn-secondary" id="resetBtn">リセット</button>
+      <button class="btn-secondary" id="skipBtn">スキップ</button>
+    </div>
+    <div class="session-dots" id="dots"></div>
+  </div>
+
+  <div class="todo-card">
+    <h2>今日のタスク</h2>
+    <div class="todo-input-row">
+      <input type="text" id="todoInput" placeholder="タスクを入力してEnter" maxlength="120">
+      <button id="addBtn">追加</button>
+    </div>
+    <ul id="list"></ul>
+    <div class="empty" id="emptyMsg">タスクはまだありません</div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const FOCUS = 25 * 60;
+  const SHORT_BREAK = 5 * 60;
+  const LONG_BREAK = 15 * 60;
+
+  const state = {
+    remaining: FOCUS,
+    total: FOCUS,
+    mode: 'focus',
+    running: false,
+    sessionCount: 0,
+    timerId: null,
+    activeTaskId: null,
+  };
+
+  const timeDisplay = document.getElementById('timeDisplay');
+  const modeLabel = document.getElementById('modeLabel');
+  const ringFill = document.getElementById('ringFill');
+  const startBtn = document.getElementById('startBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const skipBtn = document.getElementById('skipBtn');
+  const dotsEl = document.getElementById('dots');
+  const listEl = document.getElementById('list');
+  const emptyMsg = document.getElementById('emptyMsg');
+  const todoInput = document.getElementById('todoInput');
+  const addBtn = document.getElementById('addBtn');
+
+  function fmt(sec) {
+    const m = Math.floor(sec / 60).toString().padStart(2, '0');
+    const s = Math.floor(sec % 60).toString().padStart(2, '0');
+    return m + ':' + s;
+  }
+
+  function renderTimer() {
+    timeDisplay.textContent = fmt(state.remaining);
+    ringFill.style.width = ((state.remaining / state.total) * 100) + '%';
+    modeLabel.textContent = state.mode === 'focus' ? '集中タイム'
+      : state.mode === 'short' ? '小休憩' : '長休憩';
+    startBtn.textContent = state.running ? '一時停止' : '開始';
+
+    dotsEl.innerHTML = '';
+    for (let i = 0; i < 4; i++) {
+      const d = document.createElement('div');
+      d.className = 'dot' + (i < (state.sessionCount % 4) ? ' filled' : '');
+      dotsEl.appendChild(d);
+    }
+  }
+
+  function tick() {
+    if (state.remaining <= 0) {
+      completeSession();
+      return;
+    }
+    state.remaining -= 1;
+    renderTimer();
+  }
+
+  function completeSession() {
+    pause();
+    if (state.mode === 'focus') {
+      state.sessionCount += 1;
+      if (state.activeTaskId != null) {
+        const t = todos.find(x => x.id === state.activeTaskId);
+        if (t) { t.pomos = (t.pomos || 0) + 1; saveTodos(); renderTodos(); }
+      }
+      state.mode = (state.sessionCount % 4 === 0) ? 'long' : 'short';
+    } else {
+      state.mode = 'focus';
+    }
+    state.total = state.mode === 'focus' ? FOCUS : state.mode === 'short' ? SHORT_BREAK : LONG_BREAK;
+    state.remaining = state.total;
+    renderTimer();
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      new Notification('タイマー終了', { body: state.mode === 'focus' ? '休憩しましょう' : '集中タイムを始めましょう' });
+    }
+  }
+
+  function start() {
+    if (state.running) return;
+    state.running = true;
+    state.timerId = setInterval(tick, 1000);
+    renderTimer();
+  }
+
+  function pause() {
+    state.running = false;
+    clearInterval(state.timerId);
+    renderTimer();
+  }
+
+  function reset() {
+    pause();
+    state.remaining = state.total;
+    renderTimer();
+  }
+
+  function skip() {
+    pause();
+    state.remaining = 0;
+    completeSession();
+  }
+
+  startBtn.addEventListener('click', () => state.running ? pause() : start());
+  resetBtn.addEventListener('click', reset);
+  skipBtn.addEventListener('click', skip);
+
+  if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+
+  // --- Todos ---
+  let todos = [];
+  try {
+    todos = JSON.parse(localStorage.getItem('pomodoro-todos') || '[]');
+  } catch (e) { todos = []; }
+
+  function saveTodos() {
+    try {
+      localStorage.setItem('pomodoro-todos', JSON.stringify(todos));
+    } catch (e) { /* storage unavailable (e.g. sandboxed preview) */ }
+  }
+
+  function renderTodos() {
+    listEl.innerHTML = '';
+    emptyMsg.style.display = todos.length ? 'none' : 'block';
+    todos.forEach(t => {
+      const li = document.createElement('li');
+      li.className = 'item' + (t.done ? ' done' : '');
+
+      const check = document.createElement('div');
+      check.className = 'check' + (t.done ? ' done' : '');
+      check.textContent = t.done ? '✓' : '';
+      check.addEventListener('click', () => {
+        t.done = !t.done;
+        saveTodos();
+        renderTodos();
+      });
+
+      const text = document.createElement('div');
+      text.className = 'item-text';
+      text.textContent = t.text;
+
+      li.appendChild(check);
+      li.appendChild(text);
+
+      if (state.activeTaskId === t.id) {
+        const tag = document.createElement('div');
+        tag.className = 'active-tag';
+        tag.textContent = '集中中';
+        li.appendChild(tag);
+      } else if (!t.done) {
+        li.addEventListener('dblclick', () => {
+          state.activeTaskId = (state.activeTaskId === t.id) ? null : t.id;
+          renderTodos();
+        });
+      }
+
+      if (t.pomos) {
+        const count = document.createElement('div');
+        count.className = 'pomo-count';
+        count.textContent = '🍅' + t.pomos;
+        li.appendChild(count);
+      }
+
+      const del = document.createElement('button');
+      del.className = 'del';
+      del.textContent = '×';
+      del.addEventListener('click', () => {
+        todos = todos.filter(x => x.id !== t.id);
+        if (state.activeTaskId === t.id) state.activeTaskId = null;
+        saveTodos();
+        renderTodos();
+      });
+      li.appendChild(del);
+
+      listEl.appendChild(li);
+    });
+  }
+
+  function addTodo() {
+    const text = todoInput.value.trim();
+    if (!text) return;
+    todos.push({ id: Date.now(), text, done: false, pomos: 0 });
+    todoInput.value = '';
+    saveTodos();
+    renderTodos();
+  }
+
+  addBtn.addEventListener('click', addTodo);
+  todoInput.addEventListener('keydown', e => { if (e.key === 'Enter') addTodo(); });
+
+  renderTimer();
+  renderTodos();
+})();
+</script>
+</body>
+</html>
